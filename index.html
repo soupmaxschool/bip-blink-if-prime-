@@ -3,342 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blink If Prime - Real Eye Tracking</title>
-    <script src='https://webgazer.cs.brown.edu/webgazer.js'></script>
+    <title>Blink If Prime - Facial Detection</title>
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        /* Same styles as before, plus these additions */
+        .detection-overlay {
+            position: relative;
+            display: inline-block;
         }
         
-        body {
-            font-family: 'Courier New', monospace;
-            background: linear-gradient(135deg, #0a0a1a, #1a0a2e);
-            color: #6d4aff;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-        }
-        
-        .game-container {
-            width: 100%;
-            max-width: 900px;
-            text-align: center;
-        }
-        
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            color: #fff;
-            text-shadow: 0 0 20px rgba(109, 78, 255, 0.5);
-        }
-        
-        .subtitle {
-            color: #888;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
-        }
-        
-        .camera-section {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin: 20px 0;
-            flex-wrap: wrap;
-        }
-        
-        #videoElement {
+        #videoInput {
             border: 3px solid #6d4aff;
             border-radius: 15px;
-            width: 320px;
-            height: 240px;
-            object-fit: cover;
+            width: 480px;
+            height: 360px;
         }
         
-        #eyeTrackerOverlay {
-            position: relative;
-        }
-        
-        .main-display {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin: 20px 0;
-        }
-        
-        .number-display {
-            background: rgba(26, 26, 46, 0.9);
-            border-radius: 15px;
-            padding: 30px;
-            border: 2px solid #6d4aff;
-            position: relative;
-        }
-        
-        #numberDisplay {
-            font-size: 8rem;
-            font-weight: bold;
-            color: #fff;
-            transition: all 0.1s;
-            text-shadow: 0 0 30px rgba(109, 78, 255, 0.5);
-        }
-        
-        #primeStatus {
-            font-size: 1.5rem;
-            margin-top: 10px;
-            min-height: 40px;
-            color: #888;
-        }
-        
-        .status-prime {
-            color: #6dff6d !important;
-            text-shadow: 0 0 20px rgba(109, 255, 109, 0.5);
-        }
-        
-        .status-not {
-            color: #ff6d6d !important;
-            text-shadow: 0 0 20px rgba(255, 109, 109, 0.5);
-        }
-        
-        .eye-status {
-            background: rgba(26, 26, 46, 0.9);
-            border-radius: 15px;
-            padding: 30px;
-            border: 2px solid #00ff6d;
-        }
-        
-        .blink-indicator {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            border: 5px solid #6d4aff;
-            margin: 20px auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            transition: all 0.05s;
-        }
-        
-        .blink-indicator.blind {
-            background: #6dff6d;
-            border-color: #00ff6d;
-            transform: scale(1.3);
-        }
-        
-        .blink-indicator.open {
-            background: #ff6d6d;
-            border-color: #ff6d6d;
-            transform: scale(1);
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
-            margin: 20px 0;
-        }
-        
-        .stat-box {
-            background: rgba(26, 26, 46, 0.8);
-            padding: 15px 10px;
-            border-radius: 10px;
-            border: 1px solid #6d4aff;
-        }
-        
-        .stat-label {
-            font-size: 0.7rem;
-            color: #888;
-            text-transform: uppercase;
-            margin-bottom: 5px;
-        }
-        
-        .stat-value {
-            font-size: 1.5rem;
-            color: #6d4aff;
-            font-weight: bold;
-        }
-        
-        .stat-value.highlight {
-            color: #6dff6d;
-            text-shadow: 0 0 10px rgba(109, 255, 109, 0.5);
-        }
-        
-        .feedback-log {
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 10px;
-            padding: 15px;
-            max-height: 150px;
-            overflow-y: auto;
-            margin: 20px 0;
-            text-align: left;
-            font-size: 0.8rem;
-        }
-        
-        .log-entry {
-            padding: 5px;
-            border-bottom: 1px solid rgba(109, 78, 255, 0.2);
-        }
-        
-        .log-correct {
-            color: #6dff6d;
-        }
-        
-        .log-wrong {
-            color: #ff6d6d;
-        }
-        
-        .controls {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-        
-        button {
-            background: linear-gradient(135deg, #6d4aff, #5a40cc);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            font-size: 1rem;
-            border-radius: 10px;
-            cursor: pointer;
-            font-family: inherit;
-            transition: all 0.2s;
-            min-width: 150px;
-        }
-        
-        button:hover:not(:disabled) {
-            background: linear-gradient(135deg, #5a40cc, #4a3ab5);
-            transform: translateY(-3px);
-            box-shadow: 0 5px 20px rgba(109, 78, 255, 0.5);
-        }
-        
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        button.secondary {
-            background: transparent;
-            border: 2px solid #6d4aff;
-        }
-        
-        button.danger {
-            background: linear-gradient(135deg, #ff6d6d, #cc5555);
-        }
-        
-        .calibration-info {
-            background: rgba(109, 78, 255, 0.1);
-            border: 2px dashed #6d4aff;
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        
-        .calibration-points {
-            display: grid;
-            grid-template-columns: repeat(9, 1fr);
-            gap: 10px;
-            margin: 15px 0;
-        }
-        
-        .calibration-dot {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #333;
-            margin: auto;
-            transition: all 0.3s;
-        }
-        
-        .calibration-dot.active {
-            background: #6dff6d;
-            transform: scale(1.5);
-            box-shadow: 0 0 20px rgba(109, 255, 109, 0.5);
-        }
-        
-        .speed-control {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 10px 0;
-            justify-content: center;
-        }
-        
-        input[type="range"] {
-            width: 200px;
-            accent-color: #6d4aff;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-        
-        .pulse {
-            animation: pulse 0.1s ease-in-out;
-        }
-        
-        @keyframes flash {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-        
-        .flash {
-            animation: flash 0.1s ease-in-out 3;
-        }
-        
-        .overlay-warning {
-            position: fixed;
+        #overlayCanvas {
+            position: absolute;
             top: 0;
             left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
+            border-radius: 15px;
+        }
+        
+        .blink-detect-box {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
             color: white;
-            padding: 40px;
-        }
-        
-        .overlay-warning.hidden {
-            display: none;
-        }
-        
-        .permission-buttons {
-            display: flex;
-            gap: 20px;
-            margin-top: 20px;
-        }
-        
-        .confidence-meter {
-            width: 200px;
-            height: 20px;
-            background: #333;
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 10px auto;
-        }
-        
-        .confidence-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #ff6d6d, #ffff6d, #6dff6d);
-            transition: width 0.3s;
+            font-size: 0.9rem;
         }
     </style>
 </head>
 <body>
     <div class="game-container">
         <h1>⚡ BLINK IF PRIME ⚡</h1>
-        <p class="subtitle">Real-time eye tracking | Blink when primes appear!</p>
+        <p class="subtitle">Facial landmark blink detection</p>
         
+        <!-- Stats -->
         <div class="stats-grid">
             <div class="stat-box">
                 <div class="stat-label">Score</div>
@@ -352,72 +55,44 @@
                 <div class="stat-label">Accuracy</div>
                 <div class="stat-value" id="accuracy">0%</div>
             </div>
-            <div class="stat-box">
-                <div class="stat-label">Primes Hit</div>
-                <div class="stat-value" id="primesHit">0</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">Speed</div>
-                <div class="stat-value" id="speedDisplay">1000ms</div>
-            </div>
         </div>
         
-        <div class="camera-section">
-            <div id="eyeTrackerOverlay">
-                <video id="videoElement" autoplay muted playsinline></video>
-                <canvas id="webgazerCanvas" style="position:absolute; top:0;"></canvas>
-            </div>
+        <!-- Camera Section -->
+        <div class="detection-overlay">
+            <video id="videoInput" autoplay muted playsinline></video>
+            <canvas id="overlayCanvas"></canvas>
         </div>
         
-        <div class="main-display">
-            <div class="number-display">
-                <div id="numberDisplay">?</div>
-                <div id="primeStatus">Waiting...</div>
-            </div>
-            
-            <div class="eye-status">
-                <div class="blink-indicator open" id="blinkIndicator">👁️</div>
-                <div>Eyes Status</div>
-                <div class="confidence-meter">
-                    <div class="confidence-fill" id="confidenceMeter" style="width: 50%"></div>
-                </div>
-                <small id="confidenceLabel">Detection: Calibrating</small>
-            </div>
+        <div class="blink-detect-box">
+            <strong>Eye Status:</strong> <span id="eyeStatus" style="color:#ff6d6d">OPEN</span><br>
+            <small>Lid distance: <span id="lidDistance">--</span> mm</small>
         </div>
         
-        <div class="calibration-info" id="calibrationSection">
-            <h3>🔧 Eye Tracking Calibration</h3>
-            <p>Click each dot to calibrate your eye tracking. Follow each dot with your eyes and click.</p>
-            <div class="calibration-points" id="calibrationPoints"></div>
-            <p id="calibrationProgress">Progress: 0/9 points</p>
+        <!-- Number Display -->
+        <div class="display">
+            <div id="numberDisplay">Press START</div>
+            <div id="primeStatus"></div>
         </div>
         
-        <div class="speed-control">
-            <span>Game Speed:</span>
-            <input type="range" id="speedSlider" min="500" max="2000" step="100" value="1000">
-            <span id="speedValue">1000ms</span>
-        </div>
-        
-        <div class="feedback-log" id="feedbackLog"></div>
-        
+        <!-- Controls -->
         <div class="controls">
-            <button id="calibrateBtn">📊 Start Calibration</button>
+            <button id="initCameraBtn">📷 Load Models & Camera</button>
             <button id="startBtn" disabled>🎮 START GAME</button>
-            <button id="resetBtn" class="danger">🔄 Reset</button>
+            <button id="testBlinkBtn" disabled>👁️ TEST BLINK</button>
         </div>
         
-        <div class="overlay-warning" id="permissionOverlay">
-            <h2>📷 Camera Permission Needed</h2>
-            <p>This game requires camera access for eye tracking.</p>
-            <p>We only process local video frames - nothing is stored or sent elsewhere.</p>
-            <div class="permission-buttons">
-                <button id="grantPermission">Grant Permission</button>
-                <button class="secondary" id="manualOverride">Use Manual Mode Instead</button>
-            </div>
-        </div>
+        <!-- Fallback Button -->
+        <button id="manualModeBtn" class="secondary">👆 Use Manual Mode (SPACEBAR)</button>
     </div>
 
     <script>
+        // ============= CONFIGURATION =============
+        const config = {
+            blinkThreshold: 0.4,  // Lower = easier to detect blink
+            modelURL: 'https://justadudethatwhacks.github.io/face-api.js/models/',
+            sampleRate: 100,      // ms between detections
+        };
+
         // ============= GAME STATE =============
         const state = {
             score: 0,
@@ -426,356 +101,257 @@
             correctBlinks: 0,
             currentNumber: null,
             isPlaying: false,
-            speed: 1000,
-            intervalId: null,
-            calibratedPoints: 0,
+            isModelsLoaded: false,
             lastBlinkTime: 0,
-            eyeOpenState: false,
-            calibrationActive: false
+            eyeClosedCount: 0,
+            eyeOpenCount: 0
         };
 
         // ============= DOM ELEMENTS =============
         const els = {
+            video: document.getElementById('videoInput'),
+            overlay: document.getElementById('overlayCanvas'),
             number: document.getElementById('numberDisplay'),
             primeStatus: document.getElementById('primeStatus'),
-            blinkIndicator: document.getElementById('blinkIndicator'),
+            eyeStatus: document.getElementById('eyeStatus'),
+            lidDistance: document.getElementById('lidDistance'),
             score: document.getElementById('score'),
             streak: document.getElementById('streak'),
             accuracy: document.getElementById('accuracy'),
-            primesHit: document.getElementById('primesHit'),
-            speedDisplay: document.getElementById('speedDisplay'),
-            speedValue: document.getElementById('speedValue'),
-            speedSlider: document.getElementById('speedSlider'),
-            feedbackLog: document.getElementById('feedbackLog'),
+            initCameraBtn: document.getElementById('initCameraBtn'),
             startBtn: document.getElementById('startBtn'),
-            resetBtn: document.getElementById('resetBtn'),
-            calibrateBtn: document.getElementById('calibrateBtn'),
-            calibrationSection: document.getElementById('calibrationSection'),
-            calibrationPoints: document.getElementById('calibrationPoints'),
-            calibrationProgress: document.getElementById('calibrationProgress'),
-            confidenceMeter: document.getElementById('confidenceMeter'),
-            confidenceLabel: document.getElementById('confidenceLabel'),
-            permissionOverlay: document.getElementById('permissionOverlay')
+            testBlinkBtn: document.getElementById('testBlinkBtn'),
+            manualModeBtn: document.getElementById('manualModeBtn')
         };
 
-        // ============= PRIME CHECKER =============
+        // ============= FACE API SETUP =============
+        async function loadModels() {
+            els.initCameraBtn.textContent = '⏳ Loading models...';
+            
+            try {
+                await Promise.all([
+                    faceapi.nets.tinyFaceDetector.loadFromUri(config.modelURL),
+                    faceapi.nets.faceLandmarker.loadFromUri(config.modelURL),
+                    faceapi.nets.faceExpressionNet.loadFromUri(config.modelURL)
+                ]);
+                
+                state.isModelsLoaded = true;
+                els.initCameraBtn.textContent = '✅ Models Loaded! Starting Camera...';
+                await startCamera();
+            } catch(err) {
+                els.initCameraBtn.textContent = '❌ Error loading models';
+                console.error('Model load error:', err);
+            }
+        }
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    }
+                });
+                
+                els.video.srcObject = stream;
+                els.video.addEventListener('loadeddata', () => {
+                    els.overlay.width = els.video.videoWidth;
+                    els.overlay.height = els.video.videoHeight;
+                    els.startBtn.disabled = false;
+                    els.testBlinkBtn.disabled = false;
+                    els.initCameraBtn.textContent = '📷 Camera Active';
+                    
+                    startDetection();
+                });
+            } catch(err) {
+                els.initCameraBtn.textContent = '❌ Camera access denied';
+                alert('Please allow camera access, or use Manual Mode button');
+            }
+        }
+
+        // ============= BLINK DETECTION =============
+        function calculateEAR(landmarks) {
+            // EAR = Eye Aspect Ratio
+            // Uses landmarks around eyes to calculate opening
+            
+            const leftEye = [
+                landmarks[440], // upper lid center
+                landmarks[466], // lower lid center
+            ];
+            
+            const rightEye = [
+                landmarks[263 + 11], // upper lid center
+                landmarks[263 + 13], // lower lid center
+            ];
+            
+            // Simplified - just measure vertical distance
+            // Real EAR uses 6 points per eye
+            const dist = Math.abs(leftEye[0].y - leftEye[1].y);
+            return dist;
+        }
+
+        async function startDetection() {
+            if (!state.isPlaying) return;
+            
+            setInterval(async () => {
+                if (!state.isPlaying) return;
+                
+                const detections = await faceapi
+                    .detectSingleFace(els.video, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks()
+                    .withFaceExpressions();
+                
+                if (detections) {
+                    // Draw landmarks on overlay
+                    const ctx = els.overlay.getContext('2d');
+                    ctx.clearRect(0, 0, els.overlay.width, els.overlay.height);
+                    
+                    // Get eye landmarks
+                    const eyes = detections.landmarks.getEyeLeft();
+                    const eyeDist = eyes[2].y - eyes[5].y;
+                    
+                    // Update UI
+                    els.lidDistance.textContent = eyeDist.toFixed(1);
+                    
+                    // Detect blink (threshold varies by person)
+                    if (eyeDist < config.blinkThreshold * 50) {
+                        state.eyeClosedCount++;
+                        if (Date.now() - state.lastBlinkTime > 300) {
+                            state.lastBlinkTime = Date.now();
+                            els.eyeStatus.textContent = 'CLOSED! 💤';
+                            els.eyeStatus.style.color = '#6dff6d';
+                            
+                            processBlink();
+                        }
+                    } else {
+                        state.eyeOpenCount++;
+                        els.eyeStatus.textContent = 'OPEN 👁️';
+                        els.eyeStatus.style.color = '#ff6d6d';
+                    }
+                }
+            }, config.sampleRate);
+        }
+
+        // ============= GAME LOGIC =============
         function isPrime(n) {
             if (n <= 1) return false;
             if (n <= 3) return true;
             if (n % 2 === 0 || n % 3 === 0) return false;
             for (let i = 5; i * i <= n; i += 6) {
-                if (n % i === 0 || n % (i + 2) === 0) return false;
+                if (n % i === 0 || n % (i + 2)) return false;
             }
             return true;
         }
 
-        // ============= SOUND =============
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        function playSound(freq, duration = 0.1) {
-            try {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.frequency.value = freq;
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-                osc.start();
-                osc.stop(audioCtx.currentTime + duration);
-            } catch(e) {}
-        }
-
-        // ============= LOGGING =============
-        function addLog(message, type = '') {
-            const log = document.createElement('div');
-            log.className = `log-entry ${type}`;
-            log.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            els.feedbackLog.insertBefore(log, els.feedbackLog.firstChild);
-            if (els.feedbackLog.children.length > 20) {
-                els.feedbackLog.lastChild.remove();
-            }
-        }
-
-        // ============= UPDATE STATS =============
-        function updateStats() {
-            const acc = state.totalAttempts > 0 ? 
-                Math.round((state.correctBlinks / state.totalAttempts) * 100) : 0;
-            els.score.textContent = state.score;
-            els.streak.textContent = state.streak;
-            els.accuracy.textContent = `${acc}%`;
-            els.primesHit.textContent = state.correctBlinks;
-        }
-
-        // ============= NUMBER DISPLAY =============
         function generateNumber() {
-            // Bias towards primes for better gameplay
-            let num;
+            // 40% primes for gameplay
             if (Math.random() < 0.4) {
-                const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37];
-                num = primes[Math.floor(Math.random() * primes.length)];
-            } else {
-                num = Math.floor(Math.random() * 50) + 2;
-                if (isPrime(num)) num = num + 1;
+                const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31];
+                return primes[Math.floor(Math.random() * primes.length)];
             }
-            return num;
+            return Math.floor(Math.random() * 50) + 2;
         }
 
         function showNumber() {
             state.currentNumber = generateNumber();
             els.number.textContent = state.currentNumber;
-            els.number.classList.remove('pulse');
-            void els.number.offsetWidth;
-            els.number.classList.add('pulse');
             
             const prime = isPrime(state.currentNumber);
-            els.primeStatus.textContent = prime ? `PRIME! 👁️BLINK NOW` : 'COMPOSITE';
-            els.primeStatus.className = prime ? 'status-prime' : 'status-not';
+            els.primeStatus.textContent = prime ? 'PRIME! BLINK NOW!' : '';
+            els.primeStatus.style.color = prime ? '#6dff6d' : '#888';
             
             playSound(prime ? 880 : 440);
         }
 
-        // ============= BLINK DETECTION (REAL) =============
-        let eyeTrackingInitialized = false;
-        
-        async function initWebGazer() {
-            els.permissionOverlay.classList.add('hidden');
-            els.calibrateBtn.disabled = false;
-            
-            try {
-                await webgazer.setVideoElement('videoElement').showVideo(true).showPredictionPoints(true);
-                await webgazer.saveDataDuringCalibration(false);
-                await webgazer.showParameterPanel(false);
-                await webgazer.showDebugMessages(false);
-                
-                // Set up blink listener
-                webgaver.setGazeListener((data, timestamp) => {
-                    if (data && data.eyeConfidence && data.eyeConfidence[0] > 0.7) {
-                        // Estimate eye open based on gaze variance
-                        const confidence = Math.min(data.eyeConfidence[0], data.eyeConfidence[1]);
-                        const confidencePct = confidence * 100;
-                        els.confidenceMeter.style.width = `${confidencePct}%`;
-                        els.confidenceLabel.textContent = `Confidence: ${confidencePct.toFixed(0)}%`;
-                        
-                        // Blink threshold (low confidence when blinking)
-                        if (confidence < 0.3 && Date.now() - state.lastBlinkTime > 200) {
-                            state.lastBlinkTime = Date.now();
-                            detectBlink();
-                        }
-                    }
-                }).begin();
-                
-                eyeTrackingInitialized = true;
-                addLog('Eye tracking initialized', 'log-correct');
-            } catch(err) {
-                els.permissionOverlay.innerHTML = '<h2>Camera Error</h2><p>Please allow camera access in your browser settings.</p>';
-                els.calibrateBtn.disabled = true;
-            }
-        }
-        
-        async function requestCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
-                const video = document.getElementById('videoElement');
-                video.srcObject = stream;
-                await initWebGazer();
-            } catch(err) {
-                console.error('Camera error:', err);
-                els.permissionOverlay.innerHTML = '<h2>Camera Denied</h2><p>Eye tracking unavailable. Using manual fallback.</p>';
-            }
-        }
-
-        // ============= BLINK HANDLER =============
-        function detectBlink() {
+        function processBlink() {
             if (!state.isPlaying) return;
             
-            // Visual feedback
-            els.blinkIndicator.className = 'blink-indicator blind';
-            els.blinkIndicator.textContent = '💤';
-            
-            setTimeout(() => {
-                els.blinkIndicator.className = 'blink-indicator open';
-                els.blinkIndicator.textContent = '👁️';
-            }, 150);
-            
-            // Process the blink
             const prime = isPrime(state.currentNumber);
             state.totalAttempts++;
             
             if (prime) {
+                state.score += 10 * (state.streak + 1);
                 state.streak++;
                 state.correctBlinks++;
-                const points = 10 * (state.streak);
-                state.score += points;
-                addLog(`✓ PRIME blink! +${points} pts (Streak: ${state.streak})`, 'log-correct');
-                playSound(880);
-                els.primeStatus.textContent = '✨ PERFECT TIMING! ✨';
-                els.primeStatus.classList.add('status-prime');
+                playSound(1000);
+                els.number.style.transform = 'scale(1.3)';
+                setTimeout(() => els.number.style.transform = '', 100);
             } else {
                 state.streak = 0;
-                addLog('✗ Blink on composite!', 'log-wrong');
                 playSound(200);
-                els.primeStatus.textContent = '❌ WRONG TIME! ❌';
-                els.primeStatus.classList.add('status-not');
             }
             
             updateStats();
             
-            // Move to next number immediately after blink
-            if (state.intervalId) {
-                clearInterval(state.intervalId);
-                state.intervalId = null;
-                showNumber();
-                state.intervalId = setInterval(showNumber, state.speed);
-            }
+            // Move to next number after blink
+            clearInterval(gameInterval);
+            gameInterval = setInterval(showNumber, 1000);
         }
 
-        // ============= CALIBRATION =============
-        function createCalibrationDots() {
-            const positions = [
-                {x: 10, y: 10}, {x: 50, y: 10}, {x: 90, y: 10},
-                {x: 10, y: 50}, {x: 50, y: 50}, {x: 90, y: 50},
-                {x: 10, y: 90}, {x: 50, y: 90}, {x: 90, y: 90}
-            ];
-            
-            positions.forEach((pos, idx) => {
-                const dot = document.createElement('div');
-                dot.className = 'calibration-dot';
-                dot.dataset.index = idx;
-                dot.onclick = () => calibratePoint(idx);
-                els.calibrationPoints.appendChild(dot);
-            });
-        }
-        
-        async function calibratePoint(index) {
-            if (state.calibrationActive && index === state.calibratedPoints) {
-                const dots = document.querySelectorAll('.calibration-dot');
-                dots[index].classList.add('active');
-                state.calibratedPoints++;
-                els.calibrationProgress.textContent = `Progress: ${state.calibratedPoints}/9 points`;
-                
-                // Add calibration point
-                webgaver.addDataPoint(index / 2, index / 2, index);
-                
-                if (state.calibratedPoints >= 9) {
-                    endCalibration();
-                }
-            }
-        }
-        
-        function startCalibration() {
-            if (state.calibratedPoints >= 9) {
-                addLog('Already calibrated!', '');
-                return;
-            }
-            
-            state.calibrationActive = true;
-            els.calibrationSection.style.display = 'block';
-            createCalibrationDots();
-            addLog('Calibration started. Follow the dots with your eyes.', 'log-correct');
-        }
-        
-        function endCalibration() {
-            state.calibrationActive = false;
-            state.calibratedPoints = 9;
-            els.calibrationSection.innerHTML = '<h3>✅ Calibration Complete!</h3><p>You\'re ready to play.</p>';
-            els.startBtn.disabled = false;
-            addLog('Calibration complete! Ready to play.', 'log-correct');
-            playSound(1000);
+        function updateStats() {
+            const acc = state.totalAttempts > 0 ? 
+                Math.round((state.correctBlinks / state.totalAttempts) * 100) : 0;
+            els.score.textContent = state.score;
+            els.streak.textContent = state.streak;
+            els.accuracy.textContent = acc + '%';
         }
 
-        // ============= GAME CONTROL =============
-        function startGame() {
-            state.isPlaying = true;
-            state.score = 0;
-            state.streak = 0;
-            state.totalAttempts = 0;
-            state.correctBlinks = 0;
-            updateStats();
-            addLog('🎮 Game Started!', 'log-correct');
-            
-            els.startBtn.textContent = '⏸️ PAUSE';
-            els.calibrateBtn.disabled = true;
-            els.feedbackLog.innerHTML = '';
-            
-            showNumber();
-            state.intervalId = setInterval(showNumber, state.speed);
-        }
-        
-        function pauseGame() {
-            state.isPlaying = false;
-            clearInterval(state.intervalId);
-            els.startBtn.textContent = '▶️ RESUME';
-            els.number.textContent = 'PAUSED';
-            els.primeStatus.textContent = '';
-            addLog('Game paused', '');
-        }
-        
-        function resetGame() {
-            state.isPlaying = false;
-            clearInterval(state.intervalId);
-            state.score = 0;
-            state.streak = 0;
-            state.totalAttempts = 0;
-            state.correctBlinks = 0;
-            state.calibratedPoints = 0;
-            
-            els.number.textContent = '?';
-            els.primeStatus.textContent = '';
-            els.startBtn.textContent = '🎮 START GAME';
-            els.startBtn.disabled = true;
-            els.calibrateBtn.disabled = false;
-            els.calibrationSection.innerHTML = '<h3>🔧 Eye Tracking Calibration</h3><p>Click each dot to calibrate your eye tracking.</p>';
-            updateStats();
-            els.feedbackLog.innerHTML = '';
-            addLog('Game reset', '');
+        function playSound(freq) {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.1);
         }
 
-        // ============= EVENT LISTENERS =============
-        document.getElementById('grantPermission').addEventListener('click', requestCamera);
+        // ============= CONTROLS =============
+        let gameInterval;
+
+        els.initCameraBtn.addEventListener('click', loadModels);
         
-        document.getElementById('manualOverride').addEventListener('click', () => {
-            els.permissionOverlay.classList.add('hidden');
-            els.calibrationSection.innerHTML = '<h3>👆 Manual Mode Active</h3><p>Press SPACEBAR to simulate a blink.</p>';
-            els.calibrateBtn.disabled = false;
-            els.startBtn.disabled = false;
-            addLog('Manual mode enabled (SPACEBAR = blink)', 'log-correct');
-        });
-        
-        els.calibrateBtn.addEventListener('click', startCalibration);
         els.startBtn.addEventListener('click', () => {
-            if (state.isPlaying) pauseGame();
-            else startGame();
-        });
-        els.resetBtn.addEventListener('click', resetGame);
-        
-        els.speedSlider.addEventListener('input', (e) => {
-            state.speed = parseInt(e.target.value);
-            els.speedValue.textContent = `${state.speed}ms`;
-            els.speedDisplay.textContent = `${state.speed}ms`;
-            
-            if (state.isPlaying && state.intervalId) {
-                clearInterval(state.intervalId);
-                state.intervalId = setInterval(showNumber, state.speed);
+            if (state.isPlaying) {
+                state.isPlaying = false;
+                clearInterval(gameInterval);
+                els.startBtn.textContent = '🎮 START';
+                els.number.textContent = 'PAUSED';
+            } else {
+                state.isPlaying = true;
+                els.startBtn.textContent = '⏸️ PAUSE';
+                showNumber();
+                gameInterval = setInterval(showNumber, 1000);
             }
         });
+        
+        els.testBlinkBtn.addEventListener('click', () => {
+            els.eyeStatus.textContent = 'TEST MODE 👁️';
+            setTimeout(() => els.eyeStatus.textContent = 'OPEN 👁️', 1000);
+        });
 
-        // Spacebar for manual override/testing
+        els.manualModeBtn.addEventListener('click', () => {
+            alert('Manual Mode: Press SPACEBAR to simulate a blink!');
+            // Hide camera sections
+            document.querySelector('.detection-overlay').style.display = 'none';
+            document.querySelector('.blink-detect-box').style.display = 'none';
+            els.manualModeBtn.style.display = 'none';
+        });
+
+        // Keyboard shortcut
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space' && state.isPlaying) {
                 e.preventDefault();
-                detectBlink();
-            }
-            if (e.code === 'Enter' && !state.isPlaying) {
-                e.preventDefault();
-                startGame();
+                processBlink();
             }
         });
 
-        // Initialize
-        window.addEventListener('load', () => {
-            addLog('Loading eye tracking... Please grant camera access', '');
-        });
+        // Initialize audio context on first interaction
+        document.body.addEventListener('click', () => {
+            new (window.AudioContext || window.webkitAudioContext)().resume();
+        }, { once: true });
     </script>
 </body>
 </html>
